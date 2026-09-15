@@ -8,4 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ContactsDto {
+    private String phone;
+    private String email;
 }

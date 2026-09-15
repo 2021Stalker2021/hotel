@@ -40,26 +40,47 @@ public class HotelServiceImpl implements HotelService {
 
     @Override
     public List<HotelShortDto> searchHotels(String name, String brand, String city, String country, String amenity) {
-        Specification<Hotel> spec = Specification.where((Specification<Hotel>) null);
+        Specification<Hotel> spec = (root, query, cb) -> {
+            var predicate = cb.conjunction();
 
-        if (name != null && !name.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
-        }
-        if (brand != null && !brand.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.equal(cb.lower(root.get("brand")), brand.toLowerCase()));
-        }
-        if (city != null && !city.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.equal(cb.lower(root.get("city")), city.toLowerCase()));
-        }
-        if (country != null && !country.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.equal(cb.lower(root.get("country")), country.toLowerCase()));
-        }
-        if (amenity != null && !amenity.isBlank()) {
-            spec = spec.and((root, query, cb) -> {
+            if (name != null && !name.isBlank()) {
+                predicate = cb.and(predicate, cb.like(
+                        cb.lower(root.get("name")),
+                        "%" + name.trim().toLowerCase() + "%"
+                ));
+            }
+
+            if (brand != null && !brand.isBlank()) {
+                predicate = cb.and(predicate, cb.equal(
+                        cb.lower(root.get("brand")),
+                        brand.trim().toLowerCase()
+                ));
+            }
+
+            if (city != null && !city.isBlank()) {
+                predicate = cb.and(predicate, cb.equal(
+                        cb.lower(root.get("city").as(String.class)),
+                        city.trim().toLowerCase()
+                ));
+            }
+
+            if (country != null && !country.isBlank()) {
+                predicate = cb.and(predicate, cb.equal(
+                        cb.lower(root.get("country").as(String.class)),
+                        country.trim().toLowerCase()
+                ));
+            }
+
+            if (amenity != null && !amenity.isBlank()) {
                 Join<Hotel, String> amenitiesJoin = root.join("amenities");
-                return cb.equal(cb.lower(amenitiesJoin), amenity.toLowerCase());
-            });
-        }
+                predicate = cb.and(predicate, cb.equal(
+                        cb.lower(amenitiesJoin),
+                        amenity.trim().toLowerCase()
+                ));
+            }
+
+            return predicate;
+        };
 
         List<Hotel> hotels = hotelRepository.findAll(spec);
         return hotelMapper.toShortDtoList(hotels);
